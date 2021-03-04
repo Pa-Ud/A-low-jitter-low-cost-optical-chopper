@@ -1,3 +1,7 @@
+//Author of this code: Dr. Matthew Harvey
+//A low jitter, low cost optical chopper
+//To cite this article: Parinya Udommai et al 2020 Meas. Sci. Technol. 31 125903
+
 // https://embeddedgurus.com/stack-overflow/2011/02/efficient-c-tip-13-use-the-modulus-operator-with-caution/
 #ifndef MOVINGAVERAGE_H
 #define MOVINGAVERAGE_H
