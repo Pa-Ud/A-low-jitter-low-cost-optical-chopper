@@ -1,3 +1,7 @@
+//Author of this code: Dr. Matthew Harvey
+//A low jitter, low cost optical chopper
+//To cite this article: Parinya Udommai et al 2020 Meas. Sci. Technol. 31 125903
+
 #ifndef MILLITIMER_H
 #define MILLITIMER_H
 
