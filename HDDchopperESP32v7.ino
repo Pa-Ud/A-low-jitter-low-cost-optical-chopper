@@ -1,3 +1,6 @@
+//A low jitter, low cost optical chopper
+//To cite this article: Parinya Udommai et al 2020 Meas. Sci. Technol. 31 125903
+
 #include <arduino.h>
 ////////////////////////////////////////
 //SERIAL
@@ -17,18 +20,18 @@ float ConversionFactor;
 //PID VARIABLES (Using 2*8-bit on board DAC)
 const int dacCh1 = 25;		//Fine control
 const int dacCh2 = 26;		//Course control
-int32_t dacInput =20000;		 	//Initial dacInput out of 2^16
+int32_t dacInput =20000;	//Initial dacInput out of 2^16
 uint32_t DA = 65535;
-int16_t RangeFreqDiff1 = 1;       	//in Hz
-int16_t RangeFreqDiff2 = 3;			//in Hz
+int16_t RangeFreqDiff1 = 1;     //in Hz
+int16_t RangeFreqDiff2 = 3;	//in Hz
 int16_t phaseOffset = 0;
 int N = 1;
 int switchSign = 1;
 float preK = 1;
-float Kp = preK*10;//10;		//1200/360=3.33 is the phase conversion factor
-float Ki = preK*200;//120;//100;	//1.567=1+12k/6.8k is the OpAmp gain.
-float Kd0 = 0;//Initial Kd
-float Kd = preK*20000;//10000 ;	//Stabilised Kd {{300, 500, 1e4},{200,50,2000}}
+float Kp = preK*10;
+float Ki = preK*200;
+float Kd0 = 0;			//Initial Kd
+float Kd = preK*20000;
 bool PhaseLockMode = false;
 //MOVING AVERAGE
 #include "MovingAverage.h"
@@ -51,10 +54,6 @@ void setup() {
     sc.init();
     sc.enableACKNAK('%', '*');
     sc.enableSTX(false, '£');
-	//pinMode(12,OUTPUT);
-	//ledcSetup(0, 833, 5);
-	//ledcAttachPin(12, 0);
-	//ledcWrite(0, 16);
 	//INTERUPT PINS
 	pinMode(refPin, INPUT);
 	pinMode(chopPin, INPUT);
@@ -105,11 +104,11 @@ void loop() {
 	chopFreq = 1000000.0/aveChopPeriod;		//Hz
 	freqDiff = chopFreq - refFreq;
     //VARIABLES FOR PHASE LOCK MODE (IN TICK UNIT, 1us = 1tick) 
-		ConversionFactor = 360.0/float(refPeriod);		//us to degree conversion
+		ConversionFactor = 360.0/float(refPeriod);	//us to degree conversion
 	phaseDiff = float((chopT - refT)-(int(aveRefPeriod)>>N))*ConversionFactor; //in degrees		
-	PhaseShift = phaseDiff - phaseOffset;					//works with Kp
-	SUMphaseDiff = SUMphaseDiff + (PhaseShift);				//works with Ki
-	ChangePhaseDiff = phaseDiff - prevPhaseDiff;			//works with Kd
+	PhaseShift = phaseDiff - phaseOffset;			//works with Kp
+	SUMphaseDiff = SUMphaseDiff + (PhaseShift);		//works with Ki
+	ChangePhaseDiff = phaseDiff - prevPhaseDiff;		//works with Kd
 	prevPhaseDiff = phaseDiff;
     //Go to Frequency lock mode if the freqDiff is out of range defined.
 	if (freqDiff > RangeFreqDiff2 || freqDiff < - RangeFreqDiff2) {PhaseLockMode = false;}
@@ -118,10 +117,10 @@ void loop() {
         //dacInput = dacInput + (periodDiff/abs(periodDiff));
 		if (abs(freqDiff)>100){ FreqLockGain = 10;}	//Make the locking Gain larger if the freqDiff is large.
 		else {
-			FreqLockGain = 1;						//For small freqDiff, locking Gain is 1.
+			FreqLockGain = 1;			//For small freqDiff, locking Gain is 1.
 		}
 		dacInput = dacInput + FreqLockGain*(freqDiff/abs(freqDiff));
-		Kd0 = 0;			//Reset Kd
+		Kd0 = 0;		//Reset Kd
 		SUMphaseDiff = 0;	//Reset Integral term    
     }
     // PHASE LOCK MODE      
@@ -143,17 +142,7 @@ void loop() {
 	//updateFlag0 = false;
 	updateFlag = false;
 	//PRINT SOMETHING
-	Serial.println(PhaseLockMode);
-	//Serial.print(" ");
-	/*if (Count > 0 && Count <= 50000) {
-		if (chopPeriod>0.8*aveRefPeriod && chopPeriod<1.2*aveRefPeriod) {
-			//Serial.println(chopPeriod);
-			Serial.println(float(chopT - refT)*ConversionFactor);
-			Count++;
-		}
-	}*/
-	//Serial.print(",");
-	//Serial.println(chopFreq);
+	//Serial.println(PhaseLockMode);
   }
 }
 void set16bitVoltage(uint32_t _dacInput) {
@@ -169,11 +158,9 @@ void refChange(){
 	//updateFlag0 = true;
 }
 void chopChange(){
-	//if (updateFlag0) {
-		chopT = micros();
-		prevChopPeriod = chopPeriod;
-		chopPeriod = chopT - prevChopT;
-		prevChopT = chopT;
-		updateFlag = true;
-	//}
+	chopT = micros();
+	prevChopPeriod = chopPeriod;
+	chopPeriod = chopT - prevChopT;
+	prevChopT = chopT;
+	updateFlag = true;
 }
